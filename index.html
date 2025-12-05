@@ -663,6 +663,11 @@
                 btn.classList.add('active');
                 currentLang = btn.dataset.lang;
                 updateLanguage();
+                
+                // If results are showing, update them too
+                if (document.getElementById('results').classList.contains('active')) {
+                    updateResultsLanguage();
+                }
             });
         });
 
@@ -706,12 +711,17 @@
 
             try {
                 // Call Claude API for analysis
-                const analysis = await analyzeMusicalPsychology(formData);
+                const result = await analyzeMusicalPsychology(formData);
                 
                 // Hide loading, show results
                 document.getElementById('loading').classList.remove('active');
-                displayResults(analysis);
+                displayResults(result.analysis, result.artwork);
                 document.getElementById('results').classList.add('active');
+                
+                // Show lyrics indicator if available
+                if (result.hasLyrics) {
+                    console.log('✅ Analysis includes real lyrical themes from Genius API');
+                }
                 
                 // Smooth scroll to results
                 document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -739,18 +749,71 @@
             }
 
             const result = await response.json();
-            return result.analysis;
+            return { 
+                analysis: result.analysis,
+                artwork: result.artwork,
+                hasLyrics: result.hasLyrics
+            };
         }
 
-        function displayResults(analysis) {
-            document.getElementById('lyrical-landscape').innerHTML = formatText(analysis.lyrical);
-            document.getElementById('emotional-os').innerHTML = formatText(analysis.emotional);
-            document.getElementById('stress-signature').innerHTML = formatText(analysis.stress);
-            document.getElementById('identity-anchors').innerHTML = formatText(analysis.identity);
-            document.getElementById('future-self').innerHTML = formatText(analysis.future);
+        let currentAnalysis = null;
+        let currentArtwork = null;
 
-            // Generate visual
-            generateArtVisual(analysis);
+        function displayResults(analysis, artwork) {
+            currentAnalysis = analysis;
+            currentArtwork = artwork;
+            
+            updateResultsLanguage();
+            generateEnhancedArtVisual(artwork);
+        }
+
+        function updateResultsLanguage() {
+            if (!currentAnalysis) return;
+            
+            const t = translations[currentLang];
+            
+            // Update section titles
+            document.querySelector('#results .insight-card:nth-child(1) h3').textContent = 
+                currentLang === 'es' ? '🎵 Tu Paisaje Lírico' : 
+                currentLang === 'fr' ? '🎵 Votre Paysage Lyrique' : 
+                '🎵 Your Lyrical Landscape';
+                
+            document.querySelector('#results .insight-card:nth-child(2) h3').textContent = 
+                currentLang === 'es' ? '🧠 Tu Sistema Emocional' : 
+                currentLang === 'fr' ? '🧠 Votre Système Émotionnel' : 
+                '🧠 Your Emotional Operating System';
+                
+            document.querySelector('#results .insight-card:nth-child(3) h3').textContent = 
+                currentLang === 'es' ? '⚡ Tu Firma de Estrés' : 
+                currentLang === 'fr' ? '⚡ Votre Signature de Stress' : 
+                '⚡ Your Stress Signature';
+                
+            document.querySelector('#results .insight-card:nth-child(4) h3').textContent = 
+                currentLang === 'es' ? '🎯 Tus Anclas de Identidad' : 
+                currentLang === 'fr' ? '🎯 Vos Ancres Identitaires' : 
+                '🎯 Your Identity Anchors';
+                
+            document.querySelector('#results .insight-card:nth-child(5) h3').textContent = 
+                currentLang === 'es' ? '🚀 Tu Yo Futuro' : 
+                currentLang === 'fr' ? '🚀 Votre Soi Futur' : 
+                '🚀 Your Future Self';
+            
+            document.querySelector('.art-piece h2').textContent = 
+                currentLang === 'es' ? 'Tu Paisaje Psicológico' : 
+                currentLang === 'fr' ? 'Votre Paysage Psychologique' : 
+                'Your Psychological Landscape';
+                
+            document.querySelector('.download-btn').textContent = 
+                currentLang === 'es' ? 'Descargar Tu Análisis' : 
+                currentLang === 'fr' ? 'Télécharger Votre Analyse' : 
+                'Download Your Analysis';
+            
+            // Display content
+            document.getElementById('lyrical-landscape').innerHTML = formatText(currentAnalysis.lyrical);
+            document.getElementById('emotional-os').innerHTML = formatText(currentAnalysis.emotional);
+            document.getElementById('stress-signature').innerHTML = formatText(currentAnalysis.stress);
+            document.getElementById('identity-anchors').innerHTML = formatText(currentAnalysis.identity);
+            document.getElementById('future-self').innerHTML = formatText(currentAnalysis.future);
         }
 
         function formatText(text) {
@@ -761,32 +824,95 @@
                 .join('');
         }
 
-        function generateArtVisual(analysis) {
+        function generateEnhancedArtVisual(artwork) {
+            if (!artwork) return;
+            
             const visual = document.getElementById('art-visual');
+            const { emotions, palette, intensity, diversity, dominantEmotion, mountainHeights, starPositions } = artwork;
+            
+            // Calculate emotion positions (for the "terrain")
+            const emotionKeys = Object.keys(emotions);
+            const totalScore = Object.values(emotions).reduce((a, b) => a + b, 0) || 1;
+            
+            // Generate mountain paths based on emotions
+            let mountainPaths = '';
+            if (mountainHeights && mountainHeights.length > 0) {
+                mountainPaths = mountainHeights.map((mountain, i) => {
+                    const xStart = (i / mountainHeights.length) * 800;
+                    const xPeak = xStart + mountain.width / 2;
+                    const xEnd = xStart + mountain.width;
+                    const yBase = 400;
+                    const yPeak = 400 - mountain.height;
+                    
+                    return `<path d="M ${xStart} ${yBase} L ${xPeak} ${yPeak} L ${xEnd} ${yBase} Z" 
+                            fill="url(#grad${i + 1})" opacity="0.${3 + i}" 
+                            class="mountain-${mountain.emotion}">
+                            <title>${mountain.emotion.toUpperCase()}</title>
+                        </path>`;
+                }).join('');
+            }
+            
+            // Generate stars based on emotional intensity
+            const stars = starPositions ? starPositions.map(star => `
+                <circle cx="${star.x}" cy="${star.y}" r="${star.size}" fill="${palette.accent}" opacity="${star.opacity}">
+                    <animate attributeName="opacity" values="${star.opacity * 0.3};${star.opacity};${star.opacity * 0.3}" 
+                             dur="${2 + star.delay}s" repeatCount="indefinite"/>
+                </circle>
+            `).join('') : '';
+            
+            // Create emotion-based gradients
+            const gradients = mountainHeights ? mountainHeights.map((mountain, i) => `
+                <linearGradient id="grad${i + 1}" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:${palette.primary};stop-opacity:0.8" />
+                    <stop offset="50%" style="stop-color:${palette.secondary};stop-opacity:0.6" />
+                    <stop offset="100%" style="stop-color:${palette.accent};stop-opacity:0.7" />
+                </linearGradient>
+            `).join('') : '';
+            
             visual.innerHTML = `
-                <svg width="100%" height="100%" viewBox="0 0 800 400" style="filter: drop-shadow(0 0 20px rgba(255,107,53,0.3))">
-                    <defs>
-                        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" style="stop-color:#FF6B35;stop-opacity:0.8" />
-                            <stop offset="50%" style="stop-color:#F7B801;stop-opacity:0.6" />
-                            <stop offset="100%" style="stop-color:#06D6A0;stop-opacity:0.8" />
-                        </linearGradient>
-                    </defs>
+                <div style="width: 100%; height: 100%; position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                    <svg width="100%" height="400" viewBox="0 0 800 400" style="filter: drop-shadow(0 0 30px ${palette.primary}40)">
+                        <defs>
+                            ${gradients}
+                            <radialGradient id="skyGrad">
+                                <stop offset="0%" style="stop-color:${palette.accent};stop-opacity:0.1" />
+                                <stop offset="100%" style="stop-color:${palette.primary};stop-opacity:0.05" />
+                            </radialGradient>
+                        </defs>
+                        
+                        <!-- Sky background -->
+                        <rect width="800" height="400" fill="url(#skyGrad)"/>
+                        
+                        <!-- Emotional landscape mountains -->
+                        ${mountainPaths}
+                        
+                        <!-- Constellation of moments (stars) -->
+                        ${stars}
+                        
+                        <!-- Diversity indicator (connecting lines) -->
+                        ${diversity > 30 ? `
+                            <path d="M 100 350 Q 400 ${300 - intensity} 700 350" 
+                                  stroke="${palette.secondary}" 
+                                  stroke-width="2" 
+                                  fill="none" 
+                                  opacity="0.3" 
+                                  stroke-dasharray="5,5">
+                                <animate attributeName="stroke-dashoffset" from="0" to="10" dur="2s" repeatCount="indefinite"/>
+                            </path>
+                        ` : ''}
+                    </svg>
                     
-                    <path d="M 0 400 L 0 250 L 200 150 L 400 200 L 600 100 L 800 200 L 800 400 Z" 
-                          fill="url(#grad1)" opacity="0.4"/>
-                    <path d="M 0 400 L 0 300 L 150 200 L 350 250 L 550 150 L 800 250 L 800 400 Z" 
-                          fill="url(#grad1)" opacity="0.3"/>
-                    
-                    ${[...Array(20)].map(() => {
-                        const x = Math.random() * 800;
-                        const y = Math.random() * 200;
-                        const size = Math.random() * 3 + 1;
-                        return `<circle cx="${x}" cy="${y}" r="${size}" fill="#F7B801" opacity="0.8">
-                            <animate attributeName="opacity" values="0.3;1;0.3" dur="${Math.random() * 3 + 2}s" repeatCount="indefinite"/>
-                        </circle>`;
-                    }).join('')}
-                </svg>
+                    <div style="margin-top: 20px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 15px; border: 1px solid ${palette.primary}40;">
+                        <div style="font-size: 0.9rem; opacity: 0.8; text-align: center;">
+                            <strong style="color: ${palette.accent};">Dominant Emotion:</strong> ${dominantEmotion.toUpperCase()} •
+                            <strong style="color: ${palette.secondary};">Intensity:</strong> ${intensity}% •
+                            <strong style="color: ${palette.accent};">Diversity:</strong> ${diversity} genres
+                        </div>
+                        <div style="font-size: 0.85rem; opacity: 0.6; margin-top: 10px; text-align: center;">
+                            Palette: ${palette.name}
+                        </div>
+                    </div>
+                </div>
             `;
         }
 
