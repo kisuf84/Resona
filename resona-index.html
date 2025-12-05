@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RESONA - Discover Your Emotional Operating System</title>
+    <meta name="description" content="Your music isn't entertainment. It's emotional scaffolding. RESONA decodes the behavioral patterns hidden in your listening habits.">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;600&family=Playfair+Display:wght@900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #FF6B35;
+            --secondary: #004E89;
+            --accent: #F7B801;
+            --dark: #1A1423;
+            --light: #F4F1DE;
+            --success: #06D6A0;
+        }
+
+        body {
+            font-family: 'IBM Plex Mono', monospace;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1423 50%, #2d1b3d 100%);
+            color: var(--light);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .grain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.03;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            z-index: 1;
+        }
+
+        .logo-header {
+            position: fixed;
+            top: 30px;
+            left: 40px;
+            z-index: 100;
+            animation: fadeInLeft 1s ease-out;
+        }
+
+        .logo {
+            font-family: 'DM Serif Display', serif;
+            font-size: 2rem;
+            font-weight: 400;
+            letter-spacing: 0.15em;
+            color: var(--light);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo::before {
+            content: '◉';
+            color: var(--primary);
+            font-size: 1.5rem;
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.1); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 120px 20px 60px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        .brand-name {
+            font-family: 'DM Serif Display', serif;
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 400;
+            letter-spacing: 0.2em;
+            line-height: 1.1;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, var(--primary), var(--accent), var(--success));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 8s ease infinite;
+            background-size: 200% 200%;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .brand-subtitle {
+            font-family: 'DM Serif Display', serif;
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
+            font-style: italic;
+            color: var(--accent);
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+
+        .tagline {
+            font-size: clamp(1rem, 2vw, 1.2rem);
+            color: var(--light);
+            opacity: 0.8;
+            max-width: 700px;
+            margin: 0 auto 30px;
+            line-height: 1.6;
+        }
+
+        .language-selector {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 40px;
+        }
+
+        .lang-btn {
+            padding: 10px 25px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 107, 53, 0.3);
+            border-radius: 25px;
+            color: var(--light);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .lang-btn:hover,
+        .lang-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 107, 53, 0.4);
+        }
+
+        .form-section {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            padding: 50px;
+            border: 2px solid rgba(255, 107, 53, 0.2);
+            margin-bottom: 40px;
+            animation: fadeIn 1.2s ease-out;
+        }
+
+        .form-section h2 {
+            font-family: 'DM Serif Display', serif;
+            font-size: 2rem;
+            margin-bottom: 30px;
+            color: var(--accent);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            color: var(--accent);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        input, textarea {
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--light);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(255, 107, 53, 0.3);
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .helper-text {
+            font-size: 0.8rem;
+            opacity: 0.6;
+            margin-top: 5px;
+        }
+
+        .analyze-btn {
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border: none;
+            border-radius: 15px;
+            color: var(--dark);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 60px rgba(255, 107, 53, 0.5);
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .analyze-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .analyze-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 60px;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 107, 53, 0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        .insight-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            padding: 40px;
+            border: 2px solid rgba(255, 107, 53, 0.2);
+            margin-bottom: 30px;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .insight-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .insight-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 20px 60px rgba(255, 107, 53, 0.3);
+        }
+
+        .insight-card:hover::before {
+            opacity: 0.05;
+        }
+
+        .insight-card > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .insight-card h3 {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.8rem;
+            color: var(--accent);
+            margin-bottom: 20px;
+        }
+
+        .insight-content {
+            font-size: 1.05rem;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        .insight-tag {
+            display: inline-block;
+            padding: 8px 16px;
+            background: rgba(6, 214, 160, 0.2);
+            border: 1px solid rgba(6, 214, 160, 0.3);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+
+        .art-piece {
+            margin: 60px 0;
+            text-align: center;
+        }
+
+        .art-piece h2 {
+            font-family: 'DM Serif Display', serif;
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 30px;
+        }
+
+        .landscape-visual {
+            width: 100%;
+            height: 400px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 30px;
+            border: 2px solid rgba(255, 107, 53, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .download-btn {
+            margin-top: 30px;
+            padding: 15px 40px;
+            background: var(--success);
+            border: none;
+            border-radius: 12px;
+            color: var(--dark);
+            font-family: 'IBM Plex Mono', monospace;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(6, 214, 160, 0.4);
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            margin-top: 80px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0.7;
+        }
+
+        .footer-brand {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.5rem;
+            letter-spacing: 0.15em;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .logo-header {
+                position: relative;
+                top: 0;
+                left: 0;
+                text-align: center;
+                margin-bottom: 40px;
+            }
+
+            .container {
+                padding-top: 60px;
+            }
+
+            .form-section {
+                padding: 30px 20px;
+            }
+
+            .insight-card {
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="grain"></div>
+    
+    <div class="logo-header">
+        <a href="#" class="logo">RESONA</a>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1 class="brand-name">RESONA</h1>
+            <p class="brand-subtitle">Decode Your Emotional Operating System</p>
+            <p class="tagline">
+                Your music isn't entertainment. It's emotional scaffolding. 
+                Discover the behavioral patterns hidden in your listening habits.
+            </p>
+        </header>
+
+        <div class="language-selector">
+            <button class="lang-btn active" data-lang="en">English</button>
+            <button class="lang-btn" data-lang="es">Español</button>
+            <button class="lang-btn" data-lang="fr">Français</button>
+        </div>
+
+        <div class="form-section">
+            <h2 id="form-title">Enter Your Spotify Wrapped Data</h2>
+            <form id="wrapped-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="artist1">Top Artist #1</label>
+                        <input type="text" id="artist1" placeholder="e.g., Bad Bunny" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="artist2">Top Artist #2</label>
+                        <input type="text" id="artist2" placeholder="e.g., Rema" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="artist3">Top Artist #3</label>
+                        <input type="text" id="artist3" placeholder="e.g., Drake" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="artist4">Top Artist #4</label>
+                        <input type="text" id="artist4" placeholder="e.g., Pink Sweat$">
+                    </div>
+                    <div class="form-group">
+                        <label for="artist5">Top Artist #5</label>
+                        <input type="text" id="artist5" placeholder="e.g., Shallipopi">
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="song1">Top Song #1</label>
+                        <input type="text" id="song1" placeholder="e.g., Awolowo" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="song2">Top Song #2</label>
+                        <input type="text" id="song2" placeholder="e.g., TURISTA" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="song3">Top Song #3</label>
+                        <input type="text" id="song3" placeholder="e.g., Joy is Coming" required>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="topGenre">Top Genre</label>
+                        <input type="text" id="topGenre" placeholder="e.g., Afrobeat" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="minutesListened">Total Minutes Listened</label>
+                        <input type="number" id="minutesListened" placeholder="e.g., 28101" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="genreCount">Number of Genres</label>
+                        <input type="number" id="genreCount" placeholder="e.g., 41">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="specialDay">Any Special Listening Day? (Optional)</label>
+                    <textarea id="specialDay" placeholder="e.g., 'October 1 was my Biggest Afrobeat Day - 319 minutes of Rema, Burna Boy, and FOLA'"></textarea>
+                    <p class="helper-text">This helps us understand your patterns better</p>
+                </div>
+
+                <button type="submit" class="analyze-btn">
+                    <span>Decode My Psychology</span>
+                </button>
+            </form>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="font-size: 1.2rem;">Analyzing your musical psychology...</p>
+            <p style="opacity: 0.7; margin-top: 10px;">Fetching lyrics, detecting patterns, decoding behavior</p>
+        </div>
+
+        <div class="results" id="results">
+            <div class="insight-card">
+                <h3>🎵 Your Lyrical Landscape</h3>
+                <div class="insight-content" id="lyrical-landscape"></div>
+            </div>
+
+            <div class="insight-card">
+                <h3>🧠 Your Emotional Operating System</h3>
+                <div class="insight-content" id="emotional-os"></div>
+            </div>
+
+            <div class="insight-card">
+                <h3>⚡ Your Stress Signature</h3>
+                <div class="insight-content" id="stress-signature"></div>
+            </div>
+
+            <div class="insight-card">
+                <h3>🎯 Your Identity Anchors</h3>
+                <div class="insight-content" id="identity-anchors"></div>
+            </div>
+
+            <div class="insight-card">
+                <h3>🚀 Your Future Self</h3>
+                <div class="insight-content" id="future-self"></div>
+            </div>
+
+            <div class="art-piece">
+                <h2>Your Psychological Landscape</h2>
+                <div class="landscape-visual" id="art-visual">
+                    <p style="opacity: 0.7; padding: 40px;">Visual representation will appear here</p>
+                </div>
+                <button class="download-btn" onclick="downloadResults()">Download Your Analysis</button>
+            </div>
+        </div>
+
+        <footer>
+            <div class="footer-brand">RESONA</div>
+            <p>Technology with Empathy by Soufi</p>
+            <p style="margin-top: 10px; font-size: 0.85rem;">Powered by AI + Behavioral Psychology + Musical Analysis</p>
+        </footer>
+    </div>
+
+    <script>
+        // Language translations
+        const translations = {
+            en: {
+                formTitle: "Enter Your Spotify Wrapped Data",
+                tagline: "Your music isn't entertainment. It's emotional scaffolding. Discover the behavioral patterns hidden in your listening habits.",
+                analyzeBtn: "Decode My Psychology",
+                loadingText: "Analyzing your musical psychology...",
+                loadingSubtext: "Fetching lyrics, detecting patterns, decoding behavior"
+            },
+            es: {
+                formTitle: "Ingresa Tus Datos de Spotify Wrapped",
+                tagline: "Tu música no es entretenimiento. Es andamiaje emocional. Descubre los patrones de comportamiento ocultos en tus hábitos de escucha.",
+                analyzeBtn: "Decodifica Mi Psicología",
+                loadingText: "Analizando tu psicología musical...",
+                loadingSubtext: "Obteniendo letras, detectando patrones, decodificando comportamiento"
+            },
+            fr: {
+                formTitle: "Entrez Vos Données Spotify Wrapped",
+                tagline: "Votre musique n'est pas un divertissement. C'est un échafaudage émotionnel. Découvrez les schémas comportementaux cachés dans vos habitudes d'écoute.",
+                analyzeBtn: "Décoder Ma Psychologie",
+                loadingText: "Analyse de votre psychologie musicale...",
+                loadingSubtext: "Récupération des paroles, détection des motifs, décodage du comportement"
+            }
+        };
+
+        let currentLang = 'en';
+
+        // Language selector
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentLang = btn.dataset.lang;
+                updateLanguage();
+            });
+        });
+
+        function updateLanguage() {
+            const t = translations[currentLang];
+            document.getElementById('form-title').textContent = t.formTitle;
+            document.querySelector('.tagline').textContent = t.tagline;
+            document.querySelector('.analyze-btn span').textContent = t.analyzeBtn;
+        }
+
+        // Form submission
+        document.getElementById('wrapped-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                artists: [
+                    document.getElementById('artist1').value,
+                    document.getElementById('artist2').value,
+                    document.getElementById('artist3').value,
+                    document.getElementById('artist4').value,
+                    document.getElementById('artist5').value
+                ].filter(a => a),
+                songs: [
+                    document.getElementById('song1').value,
+                    document.getElementById('song2').value,
+                    document.getElementById('song3').value
+                ].filter(s => s),
+                topGenre: document.getElementById('topGenre').value,
+                minutesListened: document.getElementById('minutesListened').value,
+                genreCount: document.getElementById('genreCount').value,
+                specialDay: document.getElementById('specialDay').value,
+                language: currentLang
+            };
+
+            // Show loading
+            document.querySelector('.form-section').style.display = 'none';
+            document.getElementById('loading').classList.add('active');
+
+            try {
+                // Call Claude API for analysis
+                const analysis = await analyzeMusicalPsychology(formData);
+                
+                // Hide loading, show results
+                document.getElementById('loading').classList.remove('active');
+                displayResults(analysis);
+                document.getElementById('results').classList.add('active');
+                
+                // Smooth scroll to results
+                document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch (error) {
+                console.error('Analysis error:', error);
+                alert('Sorry, there was an error analyzing your data. Please try again.');
+                document.getElementById('loading').classList.remove('active');
+                document.querySelector('.form-section').style.display = 'block';
+            }
+        });
+
+        async function analyzeMusicalPsychology(data) {
+            // Build comprehensive prompt for Claude
+            const languageInstruction = {
+                en: "Respond in English",
+                es: "Responde en Español",
+                fr: "Répondez en Français"
+            }[data.language];
+
+            const prompt = `You are a behavioral psychologist and musical analyst working for RESONA. Analyze this person's Spotify Wrapped data and provide deep psychological insights. ${languageInstruction}.
+
+DATA:
+- Top Artists: ${data.artists.join(', ')}
+- Top Songs: ${data.songs.join(', ')}
+- Top Genre: ${data.topGenre}
+- Total Minutes: ${data.minutesListened}
+- Genre Diversity: ${data.genreCount} genres
+- Special Day: ${data.specialDay || 'None provided'}
+
+Provide insights in these exact categories (use the section names as headers):
+
+1. LYRICAL LANDSCAPE
+Analyze the themes in their top songs. What emotional territories are they exploring? Freedom vs. connection? Past vs. future? Joy vs. melancholy? Give specific percentages and themes. Be profound.
+
+2. EMOTIONAL OPERATING SYSTEM
+How do they use music psychologically? For mood regulation? Emotional scaffolding? Identity reinforcement? Describe their unique pattern with behavioral psychology concepts.
+
+3. STRESS SIGNATURE
+What's their go-to coping mechanism revealed through music? What does their top artist/genre reveal about how they handle stress? Use concepts like attachment theory, self-determination theory, temporal self-orientation.
+
+4. IDENTITY ANCHORS  
+What are they holding onto vs. what are they reaching for? What do their musical choices say about their current life transition or emotional state? Be specific and insightful.
+
+5. FUTURE SELF
+Based on their patterns, what recommendations can you give? What might they explore next? How can they use music more intentionally for growth? Give actionable wisdom.
+
+Be profound, specific, and personal. Use the actual data points. Make them feel SEEN. This should feel like therapy through data. Write in a warm, insightful tone - like a wise friend who truly understands them.`;
+
+            // Call Claude API
+            const response = await fetch("https://api.anthropic.com/v1/messages", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    model: "claude-sonnet-4-20250514",
+                    max_tokens: 4000,
+                    messages: [
+                        { role: "user", content: prompt }
+                    ],
+                })
+            });
+
+            const result = await response.json();
+            return parseAnalysis(result.content[0].text);
+        }
+
+        function parseAnalysis(text) {
+            // Parse the Claude response into sections
+            const sections = {
+                lyrical: '',
+                emotional: '',
+                stress: '',
+                identity: '',
+                future: ''
+            };
+
+            const lines = text.split('\n');
+            let currentSection = '';
+
+            for (const line of lines) {
+                const upperLine = line.toUpperCase();
+                if (upperLine.includes('LYRICAL LANDSCAPE') || upperLine.includes('PAYSAGE LYRIQUE') || upperLine.includes('PAISAJE LÍRICO')) {
+                    currentSection = 'lyrical';
+                    continue;
+                } else if (upperLine.includes('EMOTIONAL OPERATING') || upperLine.includes('SYSTÈME ÉMOTIONNEL') || upperLine.includes('SISTEMA EMOCIONAL')) {
+                    currentSection = 'emotional';
+                    continue;
+                } else if (upperLine.includes('STRESS SIGNATURE') || upperLine.includes('SIGNATURE DE STRESS') || upperLine.includes('FIRMA DE ESTRÉS')) {
+                    currentSection = 'stress';
+                    continue;
+                } else if (upperLine.includes('IDENTITY ANCHOR') || upperLine.includes('ANCRES IDENTITAIRES') || upperLine.includes('ANCLAS DE IDENTIDAD')) {
+                    currentSection = 'identity';
+                    continue;
+                } else if (upperLine.includes('FUTURE SELF') || upperLine.includes('SOI FUTUR') || upperLine.includes('YO FUTURO')) {
+                    currentSection = 'future';
+                    continue;
+                } else if (currentSection && line.trim() && !line.startsWith('#')) {
+                    sections[currentSection] += line + '\n';
+                }
+            }
+
+            return sections;
+        }
+
+        function displayResults(analysis) {
+            document.getElementById('lyrical-landscape').innerHTML = formatText(analysis.lyrical);
+            document.getElementById('emotional-os').innerHTML = formatText(analysis.emotional);
+            document.getElementById('stress-signature').innerHTML = formatText(analysis.stress);
+            document.getElementById('identity-anchors').innerHTML = formatText(analysis.identity);
+            document.getElementById('future-self').innerHTML = formatText(analysis.future);
+
+            // Generate visual
+            generateArtVisual(analysis);
+        }
+
+        function formatText(text) {
+            return text
+                .split('\n')
+                .filter(line => line.trim())
+                .map(line => `<p style="margin-bottom: 15px;">${line}</p>`)
+                .join('');
+        }
+
+        function generateArtVisual(analysis) {
+            const visual = document.getElementById('art-visual');
+            visual.innerHTML = `
+                <svg width="100%" height="100%" viewBox="0 0 800 400" style="filter: drop-shadow(0 0 20px rgba(255,107,53,0.3))">
+                    <defs>
+                        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#FF6B35;stop-opacity:0.8" />
+                            <stop offset="50%" style="stop-color:#F7B801;stop-opacity:0.6" />
+                            <stop offset="100%" style="stop-color:#06D6A0;stop-opacity:0.8" />
+                        </linearGradient>
+                    </defs>
+                    
+                    <path d="M 0 400 L 0 250 L 200 150 L 400 200 L 600 100 L 800 200 L 800 400 Z" 
+                          fill="url(#grad1)" opacity="0.4"/>
+                    <path d="M 0 400 L 0 300 L 150 200 L 350 250 L 550 150 L 800 250 L 800 400 Z" 
+                          fill="url(#grad1)" opacity="0.3"/>
+                    
+                    ${[...Array(20)].map(() => {
+                        const x = Math.random() * 800;
+                        const y = Math.random() * 200;
+                        const size = Math.random() * 3 + 1;
+                        return `<circle cx="${x}" cy="${y}" r="${size}" fill="#F7B801" opacity="0.8">
+                            <animate attributeName="opacity" values="0.3;1;0.3" dur="${Math.random() * 3 + 2}s" repeatCount="indefinite"/>
+                        </circle>`;
+                    }).join('')}
+                </svg>
+            `;
+        }
+
+        function downloadResults() {
+            const results = document.getElementById('results').innerHTML;
+            const blob = new Blob([`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>My RESONA Analysis</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; background: #1A1423; color: #F4F1DE; }
+                        .insight-card { background: rgba(255,255,255,0.05); padding: 30px; margin: 20px 0; border-radius: 15px; border: 2px solid rgba(255,107,53,0.3); }
+                        h3 { color: #F7B801; font-size: 1.5rem; margin-bottom: 15px; }
+                    </style>
+                </head>
+                <body>
+                    <h1 style="text-align: center; color: #FF6B35; font-size: 3rem; letter-spacing: 0.2em;">RESONA</h1>
+                    <p style="text-align: center; font-style: italic; margin-bottom: 40px;">My Emotional Operating System</p>
+                    ${results}
+                    <footer style="text-align: center; margin-top: 60px; opacity: 0.7;">
+                        <p>Generated by RESONA</p>
+                        <p>Technology with Empathy by Soufi</p>
+                    </footer>
+                </body>
+                </html>
+            `], { type: 'text/html' });
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'my-resona-analysis.html';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
