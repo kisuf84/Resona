@@ -1,5 +1,5 @@
 // api/analyze.js
-// Vercel Serverless Function for RESONA analysis
+// Vercel Serverless Function for RESONA with Genius API integration
 
 export default async function handler(req, res) {
   // Enable CORS
@@ -25,12 +25,20 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Get API key from environment variable
+    // Get API keys from environment variables
     const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+    const GENIUS_API_KEY = process.env.GENIUS_API_KEY;
     
     if (!ANTHROPIC_API_KEY) {
-      console.error('Missing ANTHROPIC_API_KEY environment variable');
+      console.error('Missing ANTHROPIC_API_KEY');
       return res.status(500).json({ error: 'Server configuration error' });
+    }
+
+    // Fetch lyrical themes from Genius API
+    let lyricsData = [];
+    if (GENIUS_API_KEY) {
+      console.log('Fetching lyrics from Genius...');
+      lyricsData = await fetchLyricsFromGenius(songs, artists, GENIUS_API_KEY);
     }
 
     // Build the analysis prompt
@@ -40,7 +48,11 @@ export default async function handler(req, res) {
       fr: "Répondez en Français"
     }[language || 'en'];
 
-    const prompt = `You are a behavioral psychologist and musical analyst working for RESONA. Analyze this person's Spotify Wrapped data and provide deep psychological insights. ${languageInstruction}.
+    const lyricsSection = lyricsData.length > 0 
+      ? `\n\nLYRICAL THEMES FOUND:\n${lyricsData.map(l => `"${l.song}" by ${l.artist}: ${l.themes}`).join('\n')}`
+      : '';
+
+    const prompt = `You are a behavioral psychologist and musical analyst for RESONA. Provide deep, personal psychological insights based on Spotify data. ${languageInstruction}.
 
 DATA:
 - Top Artists: ${artists.join(', ')}
@@ -48,26 +60,26 @@ DATA:
 - Top Genre: ${topGenre}
 - Total Minutes: ${minutesListened}
 - Genre Diversity: ${genreCount || 'Not specified'} genres
-- Special Day: ${specialDay || 'None provided'}
+- Special Day: ${specialDay || 'None provided'}${lyricsSection}
 
-Provide insights in these exact categories. Start each section with the exact header in ALL CAPS:
+CRITICAL: Provide exactly FIVE sections with substantial content (2-3 paragraphs each). Start each with the header in ALL CAPS:
 
 1. LYRICAL LANDSCAPE
-Analyze the emotional themes in their music choices. What emotional territories are they exploring? Freedom vs. connection? Past vs. future? Joy vs. melancholy? Give specific insights about their listening patterns. Be profound and personal.
+${lyricsData.length > 0 ? 'Using the lyrical themes above, ' : ''}Analyze emotional patterns. Calculate theme percentages: freedom vs. connection (X%), past vs. future (X%), joy vs. melancholy (X%), independence vs. belonging (X%). Reference specific artists/songs. Be personal and profound. 2-3 paragraphs.
 
-2. EMOTIONAL OPERATING SYSTEM
-How do they use music psychologically? For mood regulation? Emotional scaffolding? Identity reinforcement? Describe their unique pattern using behavioral psychology concepts.
+2. EMOTIONAL OPERATING SYSTEM  
+How do they use music psychologically? Apply Self-Determination Theory, Flow State Theory, Mood Regulation. Reference their ${minutesListened} minutes, ${genreCount || 'diverse'} genres, and patterns. 2-3 paragraphs with concrete insights.
 
 3. STRESS SIGNATURE
-What's their go-to coping mechanism revealed through music? What does their top artist/genre reveal about how they handle stress? Use concepts like attachment theory, self-determination theory, temporal self-orientation.
+Analyze coping mechanisms through ${artists[0]} as their anchor artist. What attachment style? How do they self-soothe? Use attachment theory and temporal self-orientation. Make it feel like therapy. 2-3 paragraphs.
 
-4. IDENTITY ANCHORS  
-What are they holding onto vs. what are they reaching for? What do their musical choices say about their current life transition or emotional state? Be specific and insightful.
+4. IDENTITY ANCHORS
+What are they holding onto vs. reaching for? What transition are they processing? Reference artists/genres as evidence. Make them feel SEEN. 2-3 paragraphs.
 
 5. FUTURE SELF
-Based on their patterns, what recommendations can you give? What might they explore next? How can they use music more intentionally for growth? Give actionable wisdom.
+MUST NOT BE EMPTY. Give 4-5 specific, actionable recommendations for musical exploration and intentional growth. Predict their emotional evolution. 2-3 solid paragraphs.
 
-IMPORTANT: Be profound, specific, and personal. Use the actual data points (artist names, genre, etc). Make them feel SEEN. This should feel like therapy through data. Write in a warm, insightful tone - like a wise friend who truly understands them. Write 2-3 solid paragraphs for each section.`;
+TONE: Warm, insightful, personal. Use "you". Reference actual data. This should feel like therapy through data.`;
 
     // Call Claude API
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -79,43 +91,186 @@ IMPORTANT: Be profound, specific, and personal. Use the actual data points (arti
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 4000,
-        messages: [
-          { 
-            role: "user", 
-            content: prompt 
-          }
-        ],
+        max_tokens: 4500,
+        temperature: 0.8,
+        messages: [{ role: "user", content: prompt }],
       })
     });
 
     if (!response.ok) {
       const errorData = await response.text();
       console.error('Claude API Error:', errorData);
-      return res.status(500).json({ 
-        error: 'Analysis failed', 
-        details: 'Could not connect to AI service' 
-      });
+      return res.status(500).json({ error: 'Analysis failed', details: 'AI service error' });
     }
 
     const result = await response.json();
     const analysisText = result.content[0].text;
 
-    // Parse the response into sections
+    // Parse sections
     const sections = parseAnalysis(analysisText);
+
+    // Generate artwork data
+    const artworkData = generateArtworkData(sections, { topGenre, minutesListened, genreCount });
 
     return res.status(200).json({
       success: true,
-      analysis: sections
+      analysis: sections,
+      artwork: artworkData,
+      hasLyrics: lyricsData.length > 0
     });
 
   } catch (error) {
     console.error('Analysis error:', error);
-    return res.status(500).json({ 
-      error: 'Analysis failed', 
-      details: error.message 
+    return res.status(500).json({ error: 'Analysis failed', details: error.message });
+  }
+}
+
+// Fetch song themes from Genius API
+async function fetchLyricsFromGenius(songs, artists, apiKey) {
+  const lyricsData = [];
+  
+  try {
+    for (let i = 0; i < Math.min(songs.length, 3); i++) {
+      const song = songs[i];
+      const artist = artists[Math.min(i, artists.length - 1)];
+      
+      const searchUrl = `https://api.genius.com/search?q=${encodeURIComponent(song + ' ' + artist)}`;
+      const searchResponse = await fetch(searchUrl, {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      
+      if (!searchResponse.ok) continue;
+      
+      const searchData = await searchResponse.json();
+      const hit = searchData.response?.hits?.[0];
+      
+      if (hit && hit.result) {
+        const themes = extractThemesFromMetadata(song, artist, hit.result);
+        lyricsData.push({
+          song: song,
+          artist: artist,
+          themes: themes,
+          url: hit.result.url
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Genius API error:', error);
+  }
+  
+  return lyricsData;
+}
+
+// Extract themes from song metadata
+function extractThemesFromMetadata(song, artist, geniusData) {
+  const themes = [];
+  const text = (song + ' ' + artist + ' ' + (geniusData.title || '')).toLowerCase();
+  
+  const themeKeywords = {
+    'love & romance': ['love', 'heart', 'baby', 'girl', 'boy', 'kiss', 'together', 'forever'],
+    'celebration & joy': ['party', 'dance', 'night', 'vibe', 'energy', 'alive', 'celebrate'],
+    'introspection': ['feel', 'think', 'know', 'wonder', 'soul', 'mind', 'alone'],
+    'freedom & liberation': ['free', 'fly', 'run', 'escape', 'away', 'break', 'wild'],
+    'nostalgia & memory': ['remember', 'back', 'used', 'was', 'memory', 'time', 'past'],
+    'struggle & resilience': ['fight', 'pain', 'hard', 'struggle', 'battle', 'survive', 'strong'],
+    'cultural identity': ['home', 'roots', 'culture', 'people', 'world', 'belong'],
+    'desire & longing': ['want', 'need', 'wish', 'dream', 'hope', 'waiting']
+  };
+  
+  for (const [theme, keywords] of Object.entries(themeKeywords)) {
+    if (keywords.some(keyword => text.includes(keyword))) {
+      themes.push(theme);
+    }
+  }
+  
+  return themes.length > 0 ? themes.join(', ') : 'emotional expression, personal narrative';
+}
+
+// Generate artwork parameters from analysis
+function generateArtworkData(analysis, musicData) {
+  const allText = Object.values(analysis).join(' ').toLowerCase();
+  
+  // Analyze emotional markers
+  const emotionalMarkers = {
+    joy: ['joy', 'celebrat', 'happy', 'vibrant', 'energy', 'alive', 'excitement'],
+    melancholy: ['melancholy', 'reflect', 'nostalgia', 'past', 'memory', 'longing'],
+    freedom: ['freedom', 'liberat', 'escape', 'independent', 'breaking', 'wild'],
+    connection: ['connection', 'belong', 'roots', 'anchor', 'home', 'together'],
+    exploration: ['explor', 'diversity', 'curious', 'seeking', 'discover', 'journey']
+  };
+  
+  const scores = {};
+  for (const [emotion, markers] of Object.entries(emotionalMarkers)) {
+    scores[emotion] = markers.reduce((count, marker) => 
+      count + (allText.match(new RegExp(marker, 'g')) || []).length, 0
+    );
+  }
+  
+  // Genre-based color palettes
+  const genrePalettes = {
+    'afrobeat': { primary: '#FF6B35', secondary: '#F7B801', accent: '#06D6A0', name: 'Afrobeat Warmth' },
+    'reggaeton': { primary: '#E63946', secondary: '#F1C40F', accent: '#2ECC71', name: 'Latin Fire' },
+    'hip hop': { primary: '#9B59B6', secondary: '#3498DB', accent: '#E74C3C', name: 'Urban Pulse' },
+    'rap': { primary: '#34495E', secondary: '#E67E22', accent: '#ECF0F1', name: 'Street Poetry' },
+    'r&b': { primary: '#8E44AD', secondary: '#E91E63', accent: '#FFC107', name: 'Soulful Velvet' },
+    'pop': { primary: '#FF6B9D', secondary: '#4ECDC4', accent: '#FFE66D', name: 'Pop Energy' },
+    'rock': { primary: '#C0392B', secondary: '#95A5A6', accent: '#F39C12', name: 'Rock Edge' },
+    'electronic': { primary: '#00D9FF', secondary: '#FF00FF', accent: '#00FF9F', name: 'Digital Dreams' },
+    'default': { primary: '#FF6B35', secondary: '#F7B801', accent: '#06D6A0', name: 'Musical Journey' }
+  };
+  
+  const genre = musicData.topGenre?.toLowerCase() || 'default';
+  const paletteKey = Object.keys(genrePalettes).find(key => genre.includes(key)) || 'default';
+  const palette = genrePalettes[paletteKey];
+  
+  const dominantEmotion = Object.entries(scores)
+    .sort((a, b) => b[1] - a[1])[0][0];
+  
+  return {
+    emotions: scores,
+    palette: palette,
+    intensity: Math.min(100, Math.floor(musicData.minutesListened / 300)),
+    diversity: musicData.genreCount || 20,
+    dominantEmotion: dominantEmotion,
+    mountainHeights: generateMountainHeights(scores, dominantEmotion),
+    starPositions: generateStarPositions(scores)
+  };
+}
+
+// Generate mountain heights based on emotions
+function generateMountainHeights(emotions, dominant) {
+  const heights = [];
+  const emotionList = Object.entries(emotions).sort((a, b) => b[1] - a[1]);
+  
+  for (let i = 0; i < 5; i++) {
+    const [emotion, score] = emotionList[i] || [dominant, 5];
+    heights.push({
+      emotion: emotion,
+      height: 150 + (score * 30),
+      width: 100 + (score * 10)
     });
   }
+  
+  return heights;
+}
+
+// Generate star positions based on emotional intensity
+function generateStarPositions(emotions) {
+  const positions = [];
+  const totalEmotions = Object.values(emotions).reduce((a, b) => a + b, 0);
+  const starCount = Math.min(50, Math.max(15, Math.floor(totalEmotions / 2)));
+  
+  for (let i = 0; i < starCount; i++) {
+    positions.push({
+      x: Math.random() * 800,
+      y: Math.random() * 250,
+      size: Math.random() * 3 + 1,
+      opacity: Math.random() * 0.5 + 0.3,
+      delay: Math.random() * 3
+    });
+  }
+  
+  return positions;
 }
 
 function parseAnalysis(text) {
@@ -150,13 +305,12 @@ function parseAnalysis(text) {
       continue;
     }
     
-    // Add content to current section (skip headers and empty lines)
     if (currentSection && line.trim() && !line.match(/^#+/) && !upperLine.includes('SECTION')) {
       sections[currentSection] += line.trim() + ' ';
     }
   }
 
-  // Clean up sections
+  // Clean up
   Object.keys(sections).forEach(key => {
     sections[key] = sections[key].trim();
   });
