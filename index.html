@@ -627,21 +627,30 @@
                 tagline: "Your music isn't entertainment. It's emotional scaffolding. Discover the behavioral patterns hidden in your listening habits.",
                 analyzeBtn: "Decode My Psychology",
                 loadingText: "Analyzing your musical psychology...",
-                loadingSubtext: "Fetching lyrics, detecting patterns, decoding behavior"
+                loadingSubtext: "Detecting patterns, decoding behavior",
+                specialDayLabel: "Any Special Listening Day? (Optional)",
+                specialDayPlaceholder: "e.g., 'October 1 was my Biggest Afrobeat Day - 319 minutes of Rema, Burna Boy, and FOLA'",
+                specialDayHelper: "This helps us understand your patterns better"
             },
             es: {
                 formTitle: "Ingresa Tus Datos de Spotify Wrapped",
                 tagline: "Tu música no es entretenimiento. Es andamiaje emocional. Descubre los patrones de comportamiento ocultos en tus hábitos de escucha.",
                 analyzeBtn: "Decodifica Mi Psicología",
                 loadingText: "Analizando tu psicología musical...",
-                loadingSubtext: "Obteniendo letras, detectando patrones, decodificando comportamiento"
+                loadingSubtext: "Detectando patrones, decodificando comportamiento",
+                specialDayLabel: "¿Algún Día de Escucha Especial? (Opcional)",
+                specialDayPlaceholder: "ej., 'El 1 de octubre fue mi Día Más Afrobeat - 319 minutos de Rema, Burna Boy y FOLA'",
+                specialDayHelper: "Esto nos ayuda a entender mejor tus patrones"
             },
             fr: {
                 formTitle: "Entrez Vos Données Spotify Wrapped",
                 tagline: "Votre musique n'est pas un divertissement. C'est un échafaudage émotionnel. Découvrez les schémas comportementaux cachés dans vos habitudes d'écoute.",
                 analyzeBtn: "Décoder Ma Psychologie",
                 loadingText: "Analyse de votre psychologie musicale...",
-                loadingSubtext: "Récupération des paroles, détection des motifs, décodage du comportement"
+                loadingSubtext: "Détection des motifs, décodage du comportement",
+                specialDayLabel: "Un Jour d'Écoute Spécial? (Optionnel)",
+                specialDayPlaceholder: "ex., 'Le 1er octobre était mon Plus Grand Jour Afrobeat - 319 minutes de Rema, Burna Boy et FOLA'",
+                specialDayHelper: "Cela nous aide à mieux comprendre vos habitudes"
             }
         };
 
@@ -662,6 +671,9 @@
             document.getElementById('form-title').textContent = t.formTitle;
             document.querySelector('.tagline').textContent = t.tagline;
             document.querySelector('.analyze-btn span').textContent = t.analyzeBtn;
+            document.querySelector('label[for="specialDay"]').textContent = t.specialDayLabel;
+            document.getElementById('specialDay').placeholder = t.specialDayPlaceholder;
+            document.querySelector('.helper-text').textContent = t.specialDayHelper;
         }
 
         // Form submission
@@ -712,97 +724,22 @@
         });
 
         async function analyzeMusicalPsychology(data) {
-            // Build comprehensive prompt for Claude
-            const languageInstruction = {
-                en: "Respond in English",
-                es: "Responde en Español",
-                fr: "Répondez en Français"
-            }[data.language];
-
-            const prompt = `You are a behavioral psychologist and musical analyst working for RESONA. Analyze this person's Spotify Wrapped data and provide deep psychological insights. ${languageInstruction}.
-
-DATA:
-- Top Artists: ${data.artists.join(', ')}
-- Top Songs: ${data.songs.join(', ')}
-- Top Genre: ${data.topGenre}
-- Total Minutes: ${data.minutesListened}
-- Genre Diversity: ${data.genreCount} genres
-- Special Day: ${data.specialDay || 'None provided'}
-
-Provide insights in these exact categories (use the section names as headers):
-
-1. LYRICAL LANDSCAPE
-Analyze the themes in their top songs. What emotional territories are they exploring? Freedom vs. connection? Past vs. future? Joy vs. melancholy? Give specific percentages and themes. Be profound.
-
-2. EMOTIONAL OPERATING SYSTEM
-How do they use music psychologically? For mood regulation? Emotional scaffolding? Identity reinforcement? Describe their unique pattern with behavioral psychology concepts.
-
-3. STRESS SIGNATURE
-What's their go-to coping mechanism revealed through music? What does their top artist/genre reveal about how they handle stress? Use concepts like attachment theory, self-determination theory, temporal self-orientation.
-
-4. IDENTITY ANCHORS  
-What are they holding onto vs. what are they reaching for? What do their musical choices say about their current life transition or emotional state? Be specific and insightful.
-
-5. FUTURE SELF
-Based on their patterns, what recommendations can you give? What might they explore next? How can they use music more intentionally for growth? Give actionable wisdom.
-
-Be profound, specific, and personal. Use the actual data points. Make them feel SEEN. This should feel like therapy through data. Write in a warm, insightful tone - like a wise friend who truly understands them.`;
-
-            // Call Claude API
-            const response = await fetch("https://api.anthropic.com/v1/messages", {
-                method: "POST",
+            // Call our serverless API endpoint
+            const response = await fetch('/api/analyze', {
+                method: 'POST',
                 headers: {
-                    "Content-Type": "application/json",
+                    'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    model: "claude-sonnet-4-20250514",
-                    max_tokens: 4000,
-                    messages: [
-                        { role: "user", content: prompt }
-                    ],
-                })
+                body: JSON.stringify(data)
             });
 
-            const result = await response.json();
-            return parseAnalysis(result.content[0].text);
-        }
-
-        function parseAnalysis(text) {
-            // Parse the Claude response into sections
-            const sections = {
-                lyrical: '',
-                emotional: '',
-                stress: '',
-                identity: '',
-                future: ''
-            };
-
-            const lines = text.split('\n');
-            let currentSection = '';
-
-            for (const line of lines) {
-                const upperLine = line.toUpperCase();
-                if (upperLine.includes('LYRICAL LANDSCAPE') || upperLine.includes('PAYSAGE LYRIQUE') || upperLine.includes('PAISAJE LÍRICO')) {
-                    currentSection = 'lyrical';
-                    continue;
-                } else if (upperLine.includes('EMOTIONAL OPERATING') || upperLine.includes('SYSTÈME ÉMOTIONNEL') || upperLine.includes('SISTEMA EMOCIONAL')) {
-                    currentSection = 'emotional';
-                    continue;
-                } else if (upperLine.includes('STRESS SIGNATURE') || upperLine.includes('SIGNATURE DE STRESS') || upperLine.includes('FIRMA DE ESTRÉS')) {
-                    currentSection = 'stress';
-                    continue;
-                } else if (upperLine.includes('IDENTITY ANCHOR') || upperLine.includes('ANCRES IDENTITAIRES') || upperLine.includes('ANCLAS DE IDENTIDAD')) {
-                    currentSection = 'identity';
-                    continue;
-                } else if (upperLine.includes('FUTURE SELF') || upperLine.includes('SOI FUTUR') || upperLine.includes('YO FUTURO')) {
-                    currentSection = 'future';
-                    continue;
-                } else if (currentSection && line.trim() && !line.startsWith('#')) {
-                    sections[currentSection] += line + '\n';
-                }
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Analysis failed');
             }
 
-            return sections;
+            const result = await response.json();
+            return result.analysis;
         }
 
         function displayResults(analysis) {
