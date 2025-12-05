@@ -48,6 +48,7 @@
             left: 40px;
             z-index: 100;
             animation: fadeInLeft 1s ease-out;
+            cursor: pointer;
         }
 
         .logo {
@@ -60,6 +61,12 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .logo:hover {
+            color: var(--primary);
+            transform: translateX(-5px);
         }
 
         .logo::before {
@@ -484,7 +491,7 @@
     <div class="grain"></div>
     
     <div class="logo-header">
-        <a href="#" class="logo">RESONA</a>
+        <a href="#" class="logo" onclick="resetForm(event)">RESONA</a>
     </div>
 
     <div class="container">
@@ -656,17 +663,35 @@
 
         let currentLang = 'en';
 
+        let currentFormData = null;
+
         // Language selector
         document.querySelectorAll('.lang-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', async () => {
                 document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
+                const oldLang = currentLang;
                 currentLang = btn.dataset.lang;
                 updateLanguage();
                 
-                // If results are showing, update them too
-                if (document.getElementById('results').classList.contains('active')) {
-                    updateResultsLanguage();
+                // If results are showing, re-analyze in new language
+                if (document.getElementById('results').classList.contains('active') && currentFormData) {
+                    if (oldLang !== currentLang) {
+                        // Show brief loading
+                        document.getElementById('results').style.opacity = '0.5';
+                        
+                        try {
+                            // Re-run analysis in new language
+                            currentFormData.language = currentLang;
+                            const result = await analyzeMusicalPsychology(currentFormData);
+                            displayResults(result.analysis, result.artwork);
+                            document.getElementById('results').style.opacity = '1';
+                        } catch (error) {
+                            console.error('Re-analysis error:', error);
+                            document.getElementById('results').style.opacity = '1';
+                            alert('Error re-analyzing in new language. Please try again.');
+                        }
+                    }
                 }
             });
         });
@@ -704,6 +729,9 @@
                 specialDay: document.getElementById('specialDay').value,
                 language: currentLang
             };
+
+            // Store for language switching
+            currentFormData = formData;
 
             // Show loading
             document.querySelector('.form-section').style.display = 'none';
@@ -828,88 +856,207 @@
             if (!artwork) return;
             
             const visual = document.getElementById('art-visual');
-            const { emotions, palette, intensity, diversity, dominantEmotion, mountainHeights, starPositions } = artwork;
+            const { emotions, palette, intensity, diversity, dominantEmotion } = artwork;
             
-            // Calculate emotion positions (for the "terrain")
-            const emotionKeys = Object.keys(emotions);
-            const totalScore = Object.values(emotions).reduce((a, b) => a + b, 0) || 1;
+            // Sort emotions by score
+            const emotionsList = Object.entries(emotions)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
             
-            // Generate mountain paths based on emotions
-            let mountainPaths = '';
-            if (mountainHeights && mountainHeights.length > 0) {
-                mountainPaths = mountainHeights.map((mountain, i) => {
-                    const xStart = (i / mountainHeights.length) * 800;
-                    const xPeak = xStart + mountain.width / 2;
-                    const xEnd = xStart + mountain.width;
-                    const yBase = 400;
-                    const yPeak = 400 - mountain.height;
-                    
-                    return `<path d="M ${xStart} ${yBase} L ${xPeak} ${yPeak} L ${xEnd} ${yBase} Z" 
-                            fill="url(#grad${i + 1})" opacity="0.${3 + i}" 
-                            class="mountain-${mountain.emotion}">
-                            <title>${mountain.emotion.toUpperCase()}</title>
-                        </path>`;
-                }).join('');
+            const totalScore = emotionsList.reduce((sum, [_, score]) => sum + score, 0) || 1;
+            
+            // Create emotion circles (like emotional atoms/planets)
+            const emotionCircles = emotionsList.map(([emotion, score], i) => {
+                const percentage = (score / totalScore) * 100;
+                const radius = 20 + (percentage * 1.5); // Size based on prominence
+                const angle = (i / emotionsList.length) * Math.PI * 2;
+                const distance = 150;
+                const cx = 400 + Math.cos(angle) * distance;
+                const cy = 200 + Math.sin(angle) * distance;
+                
+                const emotionColors = {
+                    joy: palette.accent,
+                    melancholy: '#8E44AD',
+                    freedom: palette.primary,
+                    connection: palette.secondary,
+                    exploration: '#06D6A0'
+                };
+                
+                const color = emotionColors[emotion] || palette.primary;
+                
+                return {
+                    emotion,
+                    score,
+                    percentage: percentage.toFixed(1),
+                    cx, cy, radius, color
+                };
+            });
+            
+            // Create connection lines between related emotions
+            const connections = [];
+            for (let i = 0; i < emotionCircles.length; i++) {
+                for (let j = i + 1; j < emotionCircles.length; j++) {
+                    const scoreDiff = Math.abs(emotionCircles[i].score - emotionCircles[j].score);
+                    if (scoreDiff < 3) { // Connect similar-strength emotions
+                        connections.push({
+                            x1: emotionCircles[i].cx,
+                            y1: emotionCircles[i].cy,
+                            x2: emotionCircles[j].cx,
+                            y2: emotionCircles[j].cy,
+                            opacity: 0.2
+                        });
+                    }
+                }
             }
             
-            // Generate stars based on emotional intensity
-            const stars = starPositions ? starPositions.map(star => `
-                <circle cx="${star.x}" cy="${star.y}" r="${star.size}" fill="${palette.accent}" opacity="${star.opacity}">
-                    <animate attributeName="opacity" values="${star.opacity * 0.3};${star.opacity};${star.opacity * 0.3}" 
-                             dur="${2 + star.delay}s" repeatCount="indefinite"/>
-                </circle>
-            `).join('') : '';
-            
-            // Create emotion-based gradients
-            const gradients = mountainHeights ? mountainHeights.map((mountain, i) => `
-                <linearGradient id="grad${i + 1}" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" style="stop-color:${palette.primary};stop-opacity:0.8" />
-                    <stop offset="50%" style="stop-color:${palette.secondary};stop-opacity:0.6" />
-                    <stop offset="100%" style="stop-color:${palette.accent};stop-opacity:0.7" />
-                </linearGradient>
-            `).join('') : '';
+            // Genre diversity rings
+            const diversityRings = [];
+            const ringCount = Math.min(5, Math.floor(diversity / 10));
+            for (let i = 0; i < ringCount; i++) {
+                diversityRings.push({
+                    r: 180 + (i * 30),
+                    opacity: 0.05 + (i * 0.03)
+                });
+            }
             
             visual.innerHTML = `
-                <div style="width: 100%; height: 100%; position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                    <svg width="100%" height="400" viewBox="0 0 800 400" style="filter: drop-shadow(0 0 30px ${palette.primary}40)">
+                <div style="width: 100%; height: 100%; position: relative;">
+                    <svg width="100%" height="400" viewBox="0 0 800 400" style="filter: drop-shadow(0 0 20px ${palette.primary}30)">
                         <defs>
-                            ${gradients}
-                            <radialGradient id="skyGrad">
-                                <stop offset="0%" style="stop-color:${palette.accent};stop-opacity:0.1" />
+                            <radialGradient id="centerGrad">
+                                <stop offset="0%" style="stop-color:${palette.accent};stop-opacity:0.3" />
                                 <stop offset="100%" style="stop-color:${palette.primary};stop-opacity:0.05" />
+                            </radialGradient>
+                            <radialGradient id="glowGrad">
+                                <stop offset="0%" style="stop-color:#fff;stop-opacity:0.8" />
+                                <stop offset="100%" style="stop-color:${palette.primary};stop-opacity:0" />
                             </radialGradient>
                         </defs>
                         
-                        <!-- Sky background -->
-                        <rect width="800" height="400" fill="url(#skyGrad)"/>
+                        <!-- Background glow -->
+                        <circle cx="400" cy="200" r="300" fill="url(#centerGrad)"/>
                         
-                        <!-- Emotional landscape mountains -->
-                        ${mountainPaths}
+                        <!-- Diversity rings -->
+                        ${diversityRings.map(ring => `
+                            <circle cx="400" cy="200" r="${ring.r}" 
+                                    fill="none" 
+                                    stroke="${palette.secondary}" 
+                                    stroke-width="1" 
+                                    opacity="${ring.opacity}"
+                                    stroke-dasharray="5,10">
+                                <animateTransform
+                                    attributeName="transform"
+                                    type="rotate"
+                                    from="0 400 200"
+                                    to="360 400 200"
+                                    dur="${20 + ring.r/10}s"
+                                    repeatCount="indefinite"/>
+                            </circle>
+                        `).join('')}
                         
-                        <!-- Constellation of moments (stars) -->
-                        ${stars}
-                        
-                        <!-- Diversity indicator (connecting lines) -->
-                        ${diversity > 30 ? `
-                            <path d="M 100 350 Q 400 ${300 - intensity} 700 350" 
+                        <!-- Connection lines -->
+                        ${connections.map(conn => `
+                            <line x1="${conn.x1}" y1="${conn.y1}" 
+                                  x2="${conn.x2}" y2="${conn.y2}" 
                                   stroke="${palette.secondary}" 
                                   stroke-width="2" 
-                                  fill="none" 
-                                  opacity="0.3" 
-                                  stroke-dasharray="5,5">
-                                <animate attributeName="stroke-dashoffset" from="0" to="10" dur="2s" repeatCount="indefinite"/>
-                            </path>
-                        ` : ''}
+                                  opacity="${conn.opacity}"/>
+                        `).join('')}
+                        
+                        <!-- Central core (you) -->
+                        <circle cx="400" cy="200" r="40" fill="url(#glowGrad)">
+                            <animate attributeName="r" 
+                                     values="38;42;38" 
+                                     dur="3s" 
+                                     repeatCount="indefinite"/>
+                        </circle>
+                        <circle cx="400" cy="200" r="35" fill="${palette.primary}" opacity="0.8"/>
+                        
+                        <!-- Emotion circles -->
+                        ${emotionCircles.map((ec, i) => `
+                            <g class="emotion-group">
+                                <!-- Outer glow -->
+                                <circle cx="${ec.cx}" cy="${ec.cy}" r="${ec.radius + 5}" 
+                                        fill="${ec.color}" opacity="0.2">
+                                    <animate attributeName="r" 
+                                             values="${ec.radius + 3};${ec.radius + 8};${ec.radius + 3}" 
+                                             dur="${2 + i * 0.3}s" 
+                                             repeatCount="indefinite"/>
+                                </circle>
+                                
+                                <!-- Main circle -->
+                                <circle cx="${ec.cx}" cy="${ec.cy}" r="${ec.radius}" 
+                                        fill="${ec.color}" 
+                                        stroke="${ec.emotion === dominantEmotion ? '#fff' : 'none'}" 
+                                        stroke-width="${ec.emotion === dominantEmotion ? '3' : '0'}" 
+                                        opacity="0.9">
+                                    <animate attributeName="opacity" 
+                                             values="0.7;1;0.7" 
+                                             dur="${3 + i * 0.5}s" 
+                                             repeatCount="indefinite"/>
+                                </circle>
+                                
+                                <!-- Percentage label -->
+                                <text x="${ec.cx}" y="${ec.cy + 5}" 
+                                      text-anchor="middle" 
+                                      font-family="IBM Plex Mono, monospace" 
+                                      font-size="14" 
+                                      font-weight="600" 
+                                      fill="#1A1423">
+                                    ${ec.percentage}%
+                                </text>
+                            </g>
+                        `).join('')}
+                        
+                        <!-- Floating particles (minutes listened) -->
+                        ${[...Array(Math.min(30, Math.floor(intensity / 3)))].map((_, i) => {
+                            const angle = Math.random() * Math.PI * 2;
+                            const distance = 50 + Math.random() * 250;
+                            const x = 400 + Math.cos(angle) * distance;
+                            const y = 200 + Math.sin(angle) * distance;
+                            const size = 1 + Math.random() * 2;
+                            return `
+                                <circle cx="${x}" cy="${y}" r="${size}" 
+                                        fill="${palette.accent}" 
+                                        opacity="${0.3 + Math.random() * 0.4}">
+                                    <animate attributeName="opacity" 
+                                             values="0.2;0.8;0.2" 
+                                             dur="${2 + Math.random() * 3}s" 
+                                             repeatCount="indefinite"/>
+                                    <animateTransform
+                                        attributeName="transform"
+                                        type="translate"
+                                        values="0,0; ${Math.random() * 10 - 5},${Math.random() * 10 - 5}; 0,0"
+                                        dur="${3 + Math.random() * 2}s"
+                                        repeatCount="indefinite"/>
+                                </circle>
+                            `;
+                        }).join('')}
                     </svg>
                     
-                    <div style="margin-top: 20px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 15px; border: 1px solid ${palette.primary}40;">
-                        <div style="font-size: 0.9rem; opacity: 0.8; text-align: center;">
-                            <strong style="color: ${palette.accent};">Dominant Emotion:</strong> ${dominantEmotion.toUpperCase()} •
+                    <!-- Legend -->
+                    <div style="margin-top: 30px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                        ${emotionCircles.map(ec => `
+                            <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 10px; border: 1px solid ${ec.emotion === dominantEmotion ? palette.primary : 'transparent'}40;">
+                                <div style="width: 20px; height: 20px; border-radius: 50%; background: ${ec.color};"></div>
+                                <div style="flex: 1;">
+                                    <div style="font-size: 0.85rem; font-weight: 600; text-transform: capitalize; color: ${ec.color};">
+                                        ${ec.emotion}${ec.emotion === dominantEmotion ? ' ⭐' : ''}
+                                    </div>
+                                    <div style="font-size: 0.75rem; opacity: 0.7;">${ec.percentage}%</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div style="margin-top: 20px; text-align: center; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 15px; border: 1px solid ${palette.primary}20;">
+                        <div style="font-size: 0.9rem; opacity: 0.9;">
+                            <strong style="color: ${palette.accent};">Your Core:</strong> ${dominantEmotion.charAt(0).toUpperCase() + dominantEmotion.slice(1)} •
                             <strong style="color: ${palette.secondary};">Intensity:</strong> ${intensity}% •
-                            <strong style="color: ${palette.accent};">Diversity:</strong> ${diversity} genres
+                            <strong style="color: ${palette.accent};">Exploration:</strong> ${diversity} genres
                         </div>
-                        <div style="font-size: 0.85rem; opacity: 0.6; margin-top: 10px; text-align: center;">
-                            Palette: ${palette.name}
+                        <div style="font-size: 0.8rem; opacity: 0.6; margin-top: 8px;">
+                            Circle size = emotional prominence • White border = dominant emotion • Rings = genre diversity
                         </div>
                     </div>
                 </div>
@@ -948,6 +1095,26 @@
             a.download = 'my-resona-analysis.html';
             a.click();
             URL.revokeObjectURL(url);
+        }
+
+        function resetForm(event) {
+            if (event) event.preventDefault();
+            
+            // Reset display
+            document.getElementById('results').classList.remove('active');
+            document.getElementById('loading').classList.remove('active');
+            document.querySelector('.form-section').style.display = 'block';
+            
+            // Clear form
+            document.getElementById('wrapped-form').reset();
+            
+            // Clear stored data
+            currentFormData = null;
+            currentAnalysis = null;
+            currentArtwork = null;
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     </script>
 </body>
