@@ -52,34 +52,38 @@ export default async function handler(req, res) {
       ? `\n\nLYRICAL THEMES FOUND:\n${lyricsData.map(l => `"${l.song}" by ${l.artist}: ${l.themes}`).join('\n')}`
       : '';
 
-    const prompt = `You are a behavioral psychologist and musical analyst for RESONA. Provide deep, personal psychological insights based on Spotify data. ${languageInstruction}.
+    const prompt = `You are a cultural sociologist and behavioral researcher for RESONA. Analyze music listening data to reveal sociological and psychological patterns. ${languageInstruction}.
 
 DATA:
 - Top Artists: ${artists.join(', ')}
 - Top Songs: ${songs.join(', ')}
-- Top Genre: ${topGenre}
-- Total Minutes: ${minutesListened}
+- Primary Genre: ${topGenre}
+- Listening Volume: ${minutesListened} minutes
 - Genre Diversity: ${genreCount || 'Not specified'} genres
-- Special Day: ${specialDay || 'None provided'}${lyricsSection}
+- Notable Pattern: ${specialDay || 'None provided'}${lyricsSection}
 
-CRITICAL: Provide exactly FIVE sections with substantial content (2-3 paragraphs each). Start each with the header in ALL CAPS:
+CRITICAL INSTRUCTIONS:
+
+Write with PRECISION and DEPTH. Reference actual sociological and psychological frameworks when data supports them. Be direct and insightful, not verbose or horoscope-like. Use data points as evidence. NO em-dashes. Short, powerful sentences.
+
+Provide exactly FIVE sections (2-3 concise paragraphs each):
 
 1. LYRICAL LANDSCAPE
-${lyricsData.length > 0 ? 'Using the lyrical themes above, ' : ''}Analyze emotional patterns. Calculate theme percentages: freedom vs. connection (X%), past vs. future (X%), joy vs. melancholy (X%), independence vs. belonging (X%). Reference specific artists/songs. Be personal and profound. 2-3 paragraphs.
+${lyricsData.length > 0 ? 'Analyze lyrical themes. ' : ''}What emotional territories do they explore? Calculate theme distribution: freedom vs connection (X%), past vs future orientation (X%), joy vs melancholy (X%). Reference specific artists/songs as evidence. If data suggests integrative complexity (ability to hold multiple perspectives simultaneously), name it explicitly.
 
-2. EMOTIONAL OPERATING SYSTEM  
-How do they use music psychologically? Apply Self-Determination Theory, Flow State Theory, Mood Regulation. Reference their ${minutesListened} minutes, ${genreCount || 'diverse'} genres, and patterns. 2-3 paragraphs with concrete insights.
+2. EMOTIONAL OPERATING SYSTEM
+How do they use music functionally? Apply relevant frameworks: Self-Determination Theory (autonomy/competence/relatedness needs), Flow State Theory (Csikszentmihalyi), Mood Regulation strategies. Reference their ${minutesListened} minutes and ${genreCount || 'diverse'} genres as concrete data. If ${genreCount || 20}+ genres suggests they're building cosmopolitan cultural capital, state it directly.
 
 3. STRESS SIGNATURE
-Analyze coping mechanisms through ${artists[0]} as their anchor artist. What attachment style? How do they self-soothe? Use attachment theory and temporal self-orientation. Make it feel like therapy. 2-3 paragraphs.
+Analyze ${artists[0]} as their anchor. What does this reveal about attachment style and self-regulation patterns? Use concepts: temporal self-orientation, emotional sophistication, affect regulation. Be specific about what coping mechanisms the data reveals. Evidence-based, not generic.
 
 4. IDENTITY ANCHORS
-What are they holding onto vs. reaching for? What transition are they processing? Reference artists/genres as evidence. Make them feel SEEN. 2-3 paragraphs.
+What are they holding onto vs reaching for? If ${genreCount || 20}+ genres suggests identity portfolio diversification, reference that sociological concept explicitly. Use their actual listening patterns as evidence. Make insights feel EARNED through data, not assumed.
 
 5. FUTURE SELF
-MUST NOT BE EMPTY. Give 4-5 specific, actionable recommendations for musical exploration and intentional growth. Predict their emotional evolution. 2-3 solid paragraphs.
+CRITICAL SECTION. Don't just recommend similar music. Analyze growth edges: Where is the discomfort that signals transformation? What perspectives are they NOT accessing? How can music help them reach integrative complexity and break echo chambers? Give 3-4 specific growth pathways based on DATA GAPS (not just preferences). Focus on becoming, not just being.
 
-TONE: Warm, insightful, personal. Use "you". Reference actual data. This should feel like therapy through data.`;
+TONE: Direct, insightful, evidence-based. Like a respected researcher who sees patterns others miss. Use sociology/psychology terms when data warrants it (cosmopolitan cultural capital, integrative complexity, flow states, identity portfolio diversification, emotional sophistication). Be personal through precision, not verbosity.`;
 
     // Call Claude API
     const response = await fetch("https://api.anthropic.com/v1/messages", {
