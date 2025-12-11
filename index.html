@@ -161,11 +161,13 @@
         }
 
         .form-section {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            border-radius: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-radius: 24px;
             padding: 50px;
-            border: 2px solid rgba(255, 107, 53, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
             margin-bottom: 40px;
             animation: fadeIn 1.2s ease-out;
         }
@@ -308,11 +310,13 @@
         }
 
         .insight-card {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-radius: 20px;
             padding: 40px;
-            border: 2px solid rgba(255, 107, 53, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
             margin-bottom: 30px;
             transition: all 0.4s ease;
             position: relative;
@@ -333,8 +337,8 @@
 
         .insight-card:hover {
             transform: translateY(-5px);
-            border-color: var(--primary);
-            box-shadow: 0 20px 60px rgba(255, 107, 53, 0.3);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 12px 48px 0 rgba(255, 107, 53, 0.2);
         }
 
         .insight-card:hover::before {
@@ -500,7 +504,7 @@
             <p class="brand-subtitle">Decode Your Emotional Operating System</p>
             <p class="tagline">
                 Your music isn't entertainment. It's emotional scaffolding. 
-                Discover the behavioral patterns hidden in your listening habits.
+                Discover the sociological patterns hidden in your listening habits.
             </p>
         </header>
 
@@ -511,7 +515,7 @@
         </div>
 
         <div class="form-section">
-            <h2 id="form-title">Enter Your Spotify Wrapped Data</h2>
+            <h2 id="form-title">Enter Your Music Listening Data</h2>
             <form id="wrapped-form">
                 <div class="form-grid">
                     <div class="form-group">
@@ -630,33 +634,33 @@
         // Language translations
         const translations = {
             en: {
-                formTitle: "Enter Your Spotify Wrapped Data",
-                tagline: "Your music isn't entertainment. It's emotional scaffolding. Discover the behavioral patterns hidden in your listening habits.",
+                formTitle: "Enter Your Music Listening Data",
+                tagline: "Your music isn't entertainment. It's emotional scaffolding. Discover the sociological patterns hidden in your listening habits.",
                 analyzeBtn: "Decode My Psychology",
                 loadingText: "Analyzing your musical psychology...",
                 loadingSubtext: "Detecting patterns, decoding behavior",
-                specialDayLabel: "Any Special Listening Day? (Optional)",
-                specialDayPlaceholder: "e.g., 'October 1 was my Biggest Afrobeat Day - 319 minutes of Rema, Burna Boy, and FOLA'",
+                specialDayLabel: "Any Notable Listening Pattern? (Optional)",
+                specialDayPlaceholder: "e.g., 'October 1 was my heaviest Afrobeat day - 319 minutes of Rema, Burna Boy, and FOLA'",
                 specialDayHelper: "This helps us understand your patterns better"
             },
             es: {
-                formTitle: "Ingresa Tus Datos de Spotify Wrapped",
-                tagline: "Tu música no es entretenimiento. Es andamiaje emocional. Descubre los patrones de comportamiento ocultos en tus hábitos de escucha.",
+                formTitle: "Ingresa Tus Datos de Escucha Musical",
+                tagline: "Tu música no es entretenimiento. Es andamiaje emocional. Descubre los patrones sociológicos ocultos en tus hábitos de escucha.",
                 analyzeBtn: "Decodifica Mi Psicología",
                 loadingText: "Analizando tu psicología musical...",
                 loadingSubtext: "Detectando patrones, decodificando comportamiento",
-                specialDayLabel: "¿Algún Día de Escucha Especial? (Opcional)",
-                specialDayPlaceholder: "ej., 'El 1 de octubre fue mi Día Más Afrobeat - 319 minutos de Rema, Burna Boy y FOLA'",
+                specialDayLabel: "¿Algún Patrón de Escucha Notable? (Opcional)",
+                specialDayPlaceholder: "ej., 'El 1 de octubre fue mi día más Afrobeat - 319 minutos de Rema, Burna Boy y FOLA'",
                 specialDayHelper: "Esto nos ayuda a entender mejor tus patrones"
             },
             fr: {
-                formTitle: "Entrez Vos Données Spotify Wrapped",
-                tagline: "Votre musique n'est pas un divertissement. C'est un échafaudage émotionnel. Découvrez les schémas comportementaux cachés dans vos habitudes d'écoute.",
+                formTitle: "Entrez Vos Données d'Écoute Musicale",
+                tagline: "Votre musique n'est pas un divertissement. C'est un échafaudage émotionnel. Découvrez les schémas sociologiques cachés dans vos habitudes d'écoute.",
                 analyzeBtn: "Décoder Ma Psychologie",
                 loadingText: "Analyse de votre psychologie musicale...",
                 loadingSubtext: "Détection des motifs, décodage du comportement",
-                specialDayLabel: "Un Jour d'Écoute Spécial? (Optionnel)",
-                specialDayPlaceholder: "ex., 'Le 1er octobre était mon Plus Grand Jour Afrobeat - 319 minutes de Rema, Burna Boy et FOLA'",
+                specialDayLabel: "Un Modèle d'Écoute Notable? (Optionnel)",
+                specialDayPlaceholder: "ex., 'Le 1er octobre était mon plus grand jour Afrobeat - 319 minutes de Rema, Burna Boy et FOLA'",
                 specialDayHelper: "Cela nous aide à mieux comprendre vos habitudes"
             }
         };
